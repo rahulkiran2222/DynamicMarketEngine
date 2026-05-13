@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Market Engine – Equilibrium Simulator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #050505;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .header {
+            border-left: 3px solid #ff00ff;
+            padding-left: 15px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 22px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+        }
+
+        .stats-panel {
+            background: rgba(10, 10, 15, 0.8);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            min-width: 250px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 13px;
+        }
+
+        .label { color: #888; }
+        .val { font-weight: bold; }
+        .cyan { color: #00ffff; }
+        .magenta { color: #ff00ff; }
+        .yellow { color: #ffff00; }
+
+        #shock-notifications {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .shock-msg {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 30px;
+            border-radius: 20px;
+            border: 1px solid #fff;
+            font-weight: bold;
+            letter-spacing: 1px;
+            opacity: 0;
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 10px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="header">
+            <h1>Dynamic Market Engine</h1>
+            <div style="font-size: 10px; color: #00ffff;">EQUILIBRIUM STOCHASTIC TRACKER V2.0</div>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stat-row">
+                <span class="label">MKT PRICE (P*):</span>
+                <span class="val yellow" id="p-star">0.00</span>
+            </div>
+            <div class="stat-row">
+                <span class="label">MKT QUANTITY (Q*):</span>
+                <span class="val yellow" id="q-star">0.00</span>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #222;">
+            <div class="stat-row">
+                <span class="label">TOTAL VOLUME:</span>
+                <span class="val" id="vol-total">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="label">REAL-TIME TRADES:</span>
+                <span class="val cyan" id="trade-count">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="label">ACTIVE AGENTS:</span>
+                <span class="val magenta" id="agent-count">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="shock-notifications">
+        <div id="shock-banner" class="shock-msg">SYSTEM SHOCK DETECTED</div>
+    </div>
+
+    <div class="controls-hint">ORBIT: LEFT MOUSE | ZOOM: SCROLL | PAN: RIGHT MOUSE</div>
+
+    <!-- Dependencies -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+        // --- Configuration ---
+        const PARAMS = {
+            demandIntercept: 10.0,
+            demandSlope: 0.8,
+            supplyIntercept: 2.0,
+            supplySlope: 0.5,
+            tax: 0.0,
+            subsidy: 0.0,
+            agentCount: 400,
+            tradeFrequency: 0.5,
+            showAgents: true,
+            showProjections: true,
+            wireframeDensity: 20,
+            shock: () => {}
+        };
+
+        const STATE = {
+            eqP: 0,
+            eqQ: 0,
+            totalTrades: 0,
+            recentTrades: 0,
+            tradeHistory: [],
+            lastUpdateTime: 0,
+            agents: []
+        };
+
+        // --- Scene Setup ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(15, 12, 15);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // --- Lights ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        // --- Objects ---
+
+        // 1. Grid Floor
+        const grid = new THREE.GridHelper(20, 20, 0x333333, 0x111111);
+        grid.position.x = 10;
+        grid.position.z = 10;
+        scene.add(grid);
+
+        // 2. Curves (Dynamic)
+        const demandGeom = new THREE.BufferGeometry();
+        const supplyGeom = new THREE.BufferGeometry();
+        const demandMat = new THREE.LineBasicMaterial({ color: 0x00ffff, linewidth: 2 });
+        const supplyMat = new THREE.LineBasicMaterial({ color: 0xff00ff, linewidth: 2 });
+        
+        const demandLine = new THREE.Line(demandGeom, demandMat);
+        const supplyLine = new THREE.Line(supplyGeom, supplyMat);
+        scene.add(demandLine, supplyLine);
+
+        // 3. Equilibrium Point
+        const eqSphereGeom = new THREE.SphereGeometry(0.2, 16, 16);
+        const eqSphereMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+        const eqPoint = new THREE.Mesh(eqSphereGeom, eqSphereMat);
+        scene.add(eqPoint);
+
+        const eqGlowGeom = new THREE.SphereGeometry(0.4, 16, 16);
+        const eqGlowMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.3 });
+        const eqGlow = new THREE.Mesh(eqGlowGeom, eqGlowMat);
+        eqPoint.add(eqGlow);
+
+        // 4. Projection Lines
+        const projMat = new THREE.LineDashedMaterial({ color: 0xaaaaaa, dashSize: 0.2, gapSize: 0.1 });
+        const projGeomX = new THREE.BufferGeometry();
+        const projGeomY = new THREE.BufferGeometry();
+        const projLineX = new THREE.Line(projGeomX, projMat);
+        const projLineY = new THREE.Line(projGeomY, projMat);
+        scene.add(projLineX, projLineY);
+
+        // 5. Agents
+        const buyerPointsGeom = new THREE.BufferGeometry();
+        const sellerPointsGeom = new THREE.BufferGeometry();
+        const buyerMat = new THREE.PointsMaterial({ color: 0x0088ff, size: 0.15, transparent: true, opacity: 0.8 });
+        const sellerMat = new THREE.PointsMaterial({ color: 0xff0088, size: 0.15, transparent: true, opacity: 0.8 });
+        
+        const buyerSystem = new THREE.Points(buyerPointsGeom, buyerMat);
+        const sellerSystem = new THREE.Points(sellerPointsGeom, sellerMat);
+        scene.add(buyerSystem, sellerSystem);
+
+        // --- Logic Functions ---
+
+        function updateCurves() {
+            const dPoints = [];
+            const sPoints = [];
+            const steps = PARAMS.wireframeDensity;
+
+            for (let i = 0; i <= steps; i++) {
+                const q = (i / steps) * 20;
+                
+                // Demand: P = a - bQ
+                const pD = Math.max(0, PARAMS.demandIntercept - PARAMS.demandSlope * q);
+                dPoints.push(new THREE.Vector3(q, pD, 0));
+
+                // Supply: P = c + dQ + Tax - Subsidy
+                const pS = Math.max(0, PARAMS.supplyIntercept + PARAMS.supplySlope * q + PARAMS.tax - PARAMS.subsidy);
+                sPoints.push(new THREE.Vector3(q, pS, 0));
+            }
+
+            demandGeom.setFromPoints(dPoints);
+            supplyGeom.setFromPoints(sPoints);
+
+            // Solve Equilibrium: a - bQ = c + dQ + T - S
+            // Q(b + d) = a - c - T + S
+            // Q* = (a - c - T + S) / (b + d)
+            const numerator = PARAMS.demandIntercept - PARAMS.supplyIntercept - PARAMS.tax + PARAMS.subsidy;
+            const denominator = PARAMS.demandSlope + PARAMS.supplySlope;
+            
+            STATE.eqQ = Math.max(0, numerator / denominator);
+            STATE.eqP = PARAMS.demandIntercept - PARAMS.demandSlope * STATE.eqQ;
+
+            eqPoint.position.set(STATE.eqQ, STATE.eqP, 0);
+            eqGlow.scale.setScalar(1 + Math.sin(Date.now() * 0.005) * 0.3);
+
+            // Update projections
+            if (PARAMS.showProjections) {
+                projLineX.geometry.setFromPoints([new THREE.Vector3(STATE.eqQ, 0, 0), new THREE.Vector3(STATE.eqQ, STATE.eqP, 0)]);
+                projLineY.geometry.setFromPoints([new THREE.Vector3(0, STATE.eqP, 0), new THREE.Vector3(STATE.eqQ, STATE.eqP, 0)]);
+                projLineX.computeLineDistances();
+                projLineY.computeLineDistances();
+                projLineX.visible = projLineY.visible = true;
+            } else {
+                projLineX.visible = projLineY.visible = false;
+            }
+
+            // Update UI
+            document.getElementById('p-star').innerText = STATE.eqP.toFixed(2);
+            document.getElementById('q-star').innerText = STATE.eqQ.toFixed(2);
+        }
+
+        function initAgents() {
+            STATE.agents = [];
+            for (let i = 0; i < PARAMS.agentCount; i++) {
+                const isBuyer = i < PARAMS.agentCount / 2;
+                STATE.agents.push({
+                    isBuyer,
+                    pos: new THREE.Vector3(Math.random() * 20, Math.random() * 10, Math.random() * 5),
+                    vel: new THREE.Vector3((Math.random() - 0.5) * 0.05, (Math.random() - 0.5) * 0.05, (Math.random() - 0.5) * 0.02),
+                    valuation: 0 // Will be set relative to curves
+                });
+            }
+        }
+
+        function updateAgents() {
+            const bPos = [];
+            const sPos = [];
+
+            STATE.agents.forEach(a => {
+                // Movement: Random walk biased toward curves
+                const targetP = a.isBuyer 
+                    ? PARAMS.demandIntercept - PARAMS.demandSlope * a.pos.x 
+                    : PARAMS.supplyIntercept + PARAMS.supplySlope * a.pos.x + PARAMS.tax - PARAMS.subsidy;
+
+                // Simple steering toward their curve
+                a.vel.y += (targetP - a.pos.y) * 0.01;
+                a.pos.add(a.vel);
+                
+                // Bounds
+                if (a.pos.x < 0 || a.pos.x > 20) a.vel.x *= -1;
+                if (a.pos.y < 0 || a.pos.y > 15) a.vel.y *= -1;
+                if (a.pos.z < 0 || a.pos.z > 10) a.vel.z *= -1;
+
+                if (a.isBuyer) bPos.push(a.pos.x, a.pos.y, a.pos.z);
+                else sPos.push(a.pos.x, a.pos.y, a.pos.z);
+
+                // Trade Chance
+                if (Math.random() < 0.001 * PARAMS.tradeFrequency) {
+                    // Visual trade effect (briefly converge)
+                    if (Math.abs(a.pos.y - STATE.eqP) < 1.0) {
+                        STATE.totalTrades++;
+                        STATE.recentTrades++;
+                        createTradePulse(a.pos);
+                    }
+                }
+            });
+
+            buyerPointsGeom.setAttribute('position', new THREE.Float32BufferAttribute(bPos, 3));
+            sellerPointsGeom.setAttribute('position', new THREE.Float32BufferAttribute(sPos, 3));
+            
+            buyerSystem.visible = sellerSystem.visible = PARAMS.showAgents;
+            
+            document.getElementById('vol-total').innerText = STATE.totalTrades;
+            document.getElementById('trade-count').innerText = Math.round(STATE.recentTrades);
+            document.getElementById('agent-count').innerText = PARAMS.agentCount;
+            
+            STATE.recentTrades *= 0.99; // Decay trade counter
+        }
+
+        function createTradePulse(pos) {
+            const pGeom = new THREE.SphereGeometry(0.05, 8, 8);
+            const pMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true });
+            const p = new THREE.Mesh(pGeom, pMat);
+            p.position.copy(pos);
+            scene.add(p);
+            
+            // Minimal animation loop for particle
+            let lifetime = 0;
+            const ani = () => {
+                lifetime += 0.02;
+                p.scale.setScalar(1 + lifetime * 5);
+                p.material.opacity = 1 - lifetime;
+                if (lifetime < 1) requestAnimationFrame(ani);
+                else {
+                    scene.remove(p);
+                    pGeom.dispose();
+                    pMat.dispose();
+                }
+            };
+            ani();
+        }
+
+        function triggerShock(type) {
+            const banner = document.getElementById('shock-banner');
+            banner.style.opacity = 1;
+            banner.style.transform = "translateX(-50%) translateY(-20px)";
+            
+            let duration = 100; // frames
+            let count = 0;
+
+            const original = {
+                di: PARAMS.demandIntercept,
+                ds: PARAMS.demandSlope,
+                si: PARAMS.supplyIntercept,
+                ss: PARAMS.supplySlope
+            };
+
+            const interval = setInterval(() => {
+                count++;
+                const t = count / duration;
+                
+                if (type === 'PANDEMIC') {
+                    banner.innerText = "🚨 SHOCK: GLOBAL PANDEMIC (Demand Collapse)";
+                    PARAMS.demandIntercept = original.di * (1 - 0.4 * Math.sin(t * Math.PI));
+                    PARAMS.supplyIntercept = original.si * (1 + 0.3 * Math.sin(t * Math.PI));
+                } else if (type === 'TECH') {
+                    banner.innerText = "🚀 SHOCK: TECH BREAKTHROUGH (Supply Surplus)";
+                    PARAMS.supplySlope = original.ss * (1 - 0.5 * Math.sin(t * Math.PI));
+                } else if (type === 'POLICY') {
+                    banner.innerText = "⚖️ POLICY: CARBON TAX IMPLEMENTED";
+                    PARAMS.tax = 3.0 * Math.sin(t * Math.PI);
+                }
+
+                if (count >= duration) {
+                    clearInterval(interval);
+                    banner.style.opacity = 0;
+                    banner.style.transform = "translateX(-50%) translateY(0)";
+                }
+            }, 16);
+        }
+
+        // --- GUI ---
+        const gui = new GUI();
+        const fCurve = gui.addFolder('Curve Parameters');
+        fCurve.add(PARAMS, 'demandIntercept', 5, 15).name('Demand Height (a)').onChange(updateCurves);
+        fCurve.add(PARAMS, 'demandSlope', 0.1, 2).name('Demand Slope (b)').onChange(updateCurves);
+        fCurve.add(PARAMS, 'supplyIntercept', 0, 10).name('Supply Height (c)').onChange(updateCurves);
+        fCurve.add(PARAMS, 'supplySlope', 0.1, 2).name('Supply Slope (d)').onChange(updateCurves);
+
+        const fPolicy = gui.addFolder('Market Policy');
+        fPolicy.add(PARAMS, 'tax', 0, 5).name('Tax Rate').listen().onChange(updateCurves);
+        fPolicy.add(PARAMS, 'subsidy', 0, 5).name('Subsidy').listen().onChange(updateCurves);
+
+        const fAgents = gui.addFolder('Agent Dynamics');
+        fAgents.add(PARAMS, 'agentCount', 0, 2000).step(10).name('Pop. Size').onChange(initAgents);
+        fAgents.add(PARAMS, 'tradeFrequency', 0, 5).name('Trade Activity');
+        fAgents.add(PARAMS, 'showAgents').name('Render Particles');
+
+        const fShock = gui.addFolder('Simulation Shocks');
+        fShock.add({ f: () => triggerShock('PANDEMIC') }, 'f').name('Pandemic Shock');
+        fShock.add({ f: () => triggerShock('TECH') }, 'f').name('Tech Boom');
+        fShock.add({ f: () => triggerShock('POLICY') }, 'f').name('Carbon Tax Shift');
+
+        // --- Main Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            updateCurves();
+            updateAgents();
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Initialize
+        initAgents();
+        updateCurves();
+        animate();
+
+    </script>
+</body>
+</html>
