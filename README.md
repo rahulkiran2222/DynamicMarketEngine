@@ -1,191 +1,145 @@
+<div align="center">
 
-# Dynamic Market Engine — Equilibrium Simulator
+# ⚡ Dynamic Market Engine  
+### *3D Equilibrium & Computational Economics Simulator*
 
-## Overview
-
-Dynamic Market Engine is an interactive 3D computational economics simulator designed to model market equilibrium behavior under stochastic and policy-driven conditions. The project combines real-time visualization, agent-based simulation, and economic equilibrium modeling to explore how dynamic supply-demand systems respond to external shocks, taxation policies, and behavioral trade activity.
-
-The simulator was developed as an experimental research-oriented platform to investigate the intersection of computational modeling, economic systems, interactive visualization, and adaptive simulation architectures using modern web technologies.
-
-The system integrates:
-- Real-time equilibrium computation
-- Agent-based market interactions
-- Stochastic trade behavior
-- Dynamic policy interventions
-- Interactive economic shock simulations
-- GPU-accelerated 3D rendering
-
-The project draws conceptual inspiration from computational economics, systems simulation frameworks, and interactive educational visualization environments.
+<img src="https://img.shields.io/badge/Simulation-Computational_Economics-00ffff?style=for-the-badge">
+<img src="https://img.shields.io/badge/Visualization-Three.js-ff00ff?style=for-the-badge">
+<img src="https://img.shields.io/badge/System-Agent_Based_Modeling-ffff00?style=for-the-badge">
+<img src="https://img.shields.io/badge/Research-Interactive_Systems-00ff88?style=for-the-badge">
 
 ---
 
-## Research Motivation
+### 🌐 Real-Time Market Dynamics • 📈 Equilibrium Modeling • 🧠 Economic Simulation
 
-Modern economic systems increasingly rely on computational models to simulate nonlinear interactions between agents, policies, and market structures. Traditional static visualizations often fail to capture the emergent behavior and instability introduced by dynamic market conditions.
-
-This project explores:
-- Emergent equilibrium behavior
-- Market instability under external shocks
-- Interactive policy experimentation
-- Computational visualization of economic systems
-- Agent-driven stochastic simulations
-- Real-time educational simulation interfaces
-
-The simulator also serves as an experimental foundation for future work involving:
-- Sustainable economic modeling
-- AI-assisted market simulations
-- Reinforcement learning environments
-- Multi-agent adaptive systems
-- Behavioral economic simulation frameworks
+</div>
 
 ---
 
-## Core Features
+# 🚀 Overview
 
-### Real-Time Equilibrium Solver
-Implements dynamic supply-demand equilibrium calculations using continuously adjustable market parameters.
+**Dynamic Market Engine** is a real-time 3D computational economics simulator built to explore equilibrium behavior, stochastic market interactions, and policy-driven economic dynamics inside an immersive visualization environment.
 
-### Agent-Based Simulation
-Simulates buyer and seller populations with stochastic movement patterns and trade interactions.
+Inspired by concepts from **MIT Microeconomics**, the simulator combines:
+- ⚖️ Dynamic Supply-Demand Systems
+- 🧩 Agent-Based Market Behavior
+- 📊 Interactive Economic Policy Controls
+- 🌍 Shock Simulation Environments
+- ⚡ GPU-Accelerated 3D Rendering
 
-### Interactive Policy Controls
-Supports dynamic modification of:
-- Taxation systems
-- Subsidies
-- Supply curves
-- Demand curves
-- Trade frequency
-- Population scaling
-
-### Economic Shock Engine
-Includes real-time simulation events such as:
-- Pandemic-induced demand collapse
-- Technological supply expansion
-- Carbon tax policy interventions
-
-### 3D Visualization Layer
-Built using Three.js to provide:
-- Interactive orbital navigation
-- Real-time equilibrium rendering
-- Trade pulse visualization
-- Projection analysis
-- Particle-based market agents
-
-### Educational Simulation Environment
-Designed as a visual learning environment for:
-- Computational economics
-- Dynamic systems analysis
-- Market behavior studies
-- Economic policy experimentation
+The platform transforms traditional economic theory into an interactive computational system capable of visualizing market adaptation in real time.
 
 ---
 
-## Technical Architecture
+# ✨ Core Features
 
-### Frontend Stack
-- HTML5
-- CSS3
-- JavaScript (ES6 Modules)
+## 📈 Real-Time Equilibrium Engine
+Dynamic computation and visualization of market equilibrium using adjustable economic parameters.
 
-### Visualization & Rendering
-- Three.js
-- WebGL
-- OrbitControls
-- lil-gui
+## 👥 Agent-Based Market Simulation
+Autonomous buyer and seller agents exhibiting stochastic market behavior and trade interactions.
 
-### Simulation Components
-- Dynamic equilibrium computation
-- Stochastic agent movement
-- Event-driven shock modeling
-- Real-time parameter adjustment
+## 🌍 Economic Shock System
+Simulate:
+- 🚨 Pandemic Demand Collapse
+- 🚀 Technological Supply Expansion
+- ⚖️ Carbon Tax Policy Intervention
+
+## 🎮 Interactive Visualization
+Built with Three.js and WebGL for:
+- 3D market rendering
+- orbital camera navigation
+- particle-driven trade systems
+- live equilibrium tracking
+
+## 🧠 Educational Simulation Layer
+Transforms microeconomic theory into an interactive computational learning environment.
 
 ---
 
-## Mathematical Foundation
+# 🛠️ Tech Stack
 
-The simulator models equilibrium using linear supply-demand equations:
+<div align="center">
 
-Demand:
+| Technology | Purpose |
+|---|---|
+| ⚡ Three.js | 3D Visualization |
+| 🌐 WebGL | GPU Rendering |
+| 🧠 JavaScript ES6 | Simulation Logic |
+| 🎨 HTML5 / CSS3 | Interface System |
+| ⚙️ lil-gui | Parameter Controls |
+
+</div>
+
+---
+
+# 📊 Economic Model
+
+The simulator dynamically computes equilibrium using:
+
+### Demand Function
+```math
 P = a - bQ
+```
 
-Supply:
+### Supply Function
+```math
 P = c + dQ + T - S
+```
+
+### Equilibrium Equation
+```math
+Q^* = \frac{a-c-T+S}{b+d}
+```
 
 Where:
-- P = Price
-- Q = Quantity
-- T = Tax
-- S = Subsidy
 
-Equilibrium is computed dynamically as:
-
-Q* = (a - c - T + S) / (b + d)
-
-The framework continuously recalculates equilibrium states in real time during simulation execution.
+| Symbol | Meaning |
+|---|---|
+| 📈 P | Market Price |
+| 📦 Q | Quantity |
+| 💰 T | Tax |
+| 🎯 S | Subsidy |
 
 ---
 
-## Simulation Modules
+# 🔬 Research Motivation
 
-### Market Curves
-Dynamically rendered supply and demand structures with adjustable parameters.
+This project was developed as an experimental computational economics environment exploring:
 
-### Agent Dynamics
-Autonomous market participants exhibiting randomized yet curve-biased movement behavior.
+- 🌱 Sustainable Economic Systems
+- 🤖 AI-Driven Economic Modeling
+- 📉 Market Instability & Adaptation
+- 🧠 Interactive Educational Simulations
+- ⚡ Dynamic Policy Experimentation
+- 🌍 Computational Social Systems
 
-### Trade Pulse System
-Visual representation of successful market transactions near equilibrium conditions.
-
-### Shock Simulation Engine
-Implements transient macroeconomic disturbances affecting equilibrium stability.
-
----
-
-## Potential Research Extensions
-
-Future extensions may include:
-- Reinforcement learning agents
-- Adaptive pricing systems
-- Neural economic forecasting
-- Carbon-aware economic simulations
-- Sustainable economic optimization models
-- Multi-market interaction systems
-- Distributed economic networks
-- AI-governed market regulation models
+The simulator also acts as a foundation for future research involving:
+- Reinforcement Learning Agents
+- Sustainable Economic Optimization
+- Multi-Agent Adaptive Systems
+- AI-Augmented Policy Simulation
 
 ---
 
-## Academic Relevance
+# 🎮 Controls
 
-This project aligns with research areas including:
-- Computational Economics
-- Agent-Based Modeling
-- Complex Adaptive Systems
-- Interactive Simulation Systems
-- Economic Visualization
-- Human-Computer Interaction
-- AI-Augmented Simulation Environments
-- Sustainable Digital Systems
+| Action | Interaction |
+|---|---|
+| 🖱️ Orbit Camera | Left Mouse |
+| 🔍 Zoom | Scroll Wheel |
+| ✋ Pan | Right Mouse |
+| ⚙️ Modify Parameters | GUI Panel |
 
 ---
 
-## Running the Project
-
-Clone the repository:
-
-```bash
-git clone [repository-link]
-````
-
-Open the project directory and launch using a local development server.
-
-Example:
+# ▶️ Running the Project
 
 ```bash
 python -m http.server
 ```
 
-Then open:
+Open in browser:
 
 ```text
 http://localhost:8000
@@ -193,35 +147,35 @@ http://localhost:8000
 
 ---
 
-## Controls
+# 🌟 Inspiration
 
-| Action            | Interaction  |
-| ----------------- | ------------ |
-| Orbit Camera      | Left Mouse   |
-| Zoom              | Scroll Wheel |
-| Pan View          | Right Mouse  |
-| Modify Parameters | GUI Panel    |
+This project draws conceptual inspiration from:
 
----
-
-## Author
-
-Rahul Kiran G
-
-Independent Researcher focused on:
-
-* Sustainable AI
-* Responsible AI
-* Computational Systems
-* AI-Enabled Educational Technologies
-* Interactive Simulation Environments
-* Sustainable Software Engineering
+- 🏛️ MIT Microeconomics
+- 📊 Computational Economics
+- 🧠 Agent-Based Modeling
+- 🌍 Interactive Simulation Systems
+- ⚡ Complex Adaptive Systems
 
 ---
 
-## License
+# 👨‍💻 Author
 
-This project is intended for academic, educational, and research-oriented experimentation.
+## Rahul Kiran G
 
-```
-```
+### Research Interests
+🌱 Sustainable AI  
+⚖️ Responsible AI  
+🧠 Computational Systems  
+📚 AI-Enabled Education  
+⚡ Interactive Simulations  
+🌍 Sustainable Software Engineering
+
+---
+
+<div align="center">
+
+### ⭐ Experimental Research Project  
+### Built for Computational Exploration & Interactive Economic Visualization
+
+</div>
